@@ -1,3 +1,5 @@
+// MainActivity.kt
+
 package com.example.f1calendarwatchapp.presentation
 
 import android.os.Bundle
@@ -150,10 +152,13 @@ fun AppRoot() {
 
                             // Oturum ismine göre tipi belirle
                             val type = when {
+                                // GÜNCELLEME: "Shootout" içeriyorsa hemen NULL yap (Tıklanamaz kıl).
+                                session.name.contains("Shootout") -> null
+
                                 session.name.contains("Yarış") || session.name.contains("Race") -> SessionType.RACE
                                 session.name.contains("Sıralama") || session.name.contains("Qualifying") -> SessionType.QUALIFYING
                                 session.name.contains("Sprint") -> SessionType.SPRINT
-                                else -> null // Antrenmanlar için null döner
+                                else -> null // Antrenmanlar için null döner.
                             }
 
                             // Eğer geçerli bir tip varsa (Race, Quali, Sprint) navigasyonu başlat
@@ -184,6 +189,7 @@ fun AppRoot() {
             if (round != null && typeString != null) {
                 val sessionType = SessionType.valueOf(typeString)
                 val resultsViewModel: SessionResultsViewModel = viewModel(
+
                     factory = SessionResultsViewModel.Factory(repository, round, sessionType)
                 )
                 SessionResultsScreen(viewModel = resultsViewModel)

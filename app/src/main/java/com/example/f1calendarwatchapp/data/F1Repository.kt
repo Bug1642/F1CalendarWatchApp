@@ -103,7 +103,8 @@ data class RaceData(
     @SerializedName("SecondPractice") val secondPractice: SessionData?,
     @SerializedName("ThirdPractice") val thirdPractice: SessionData?,
     @SerializedName("Qualifying") val qualifying: SessionData?,
-    @SerializedName("Sprint") val sprint: SessionData?
+    @SerializedName("Sprint") val sprint: SessionData?,
+    @SerializedName("SprintQualifying") val sprintQualifying: SessionData? // <-- YENİ ALAN
 )
 data class Circuit(
     @SerializedName("circuitName") val circuitName: String,
@@ -117,7 +118,7 @@ data class SessionData(
     @SerializedName("time") val time: String?
 )
 data class Race(
-    val round: String, // Round eklendi
+    val round: String,
     val raceName: String,
     val circuit: Circuit,
     val date: String,
@@ -127,7 +128,8 @@ data class Race(
     val thirdPractice: SessionData?,
     val qualifying: SessionData?,
     val sprint: SessionData?,
-    val raceInstant: Instant
+    val raceInstant: Instant,
+    val sprintQualifying: SessionData?, // <-- YENİ ALAN
 )
 
 // --- 3. DATA SINIFLARI (Puan Durumu İçin) ---
@@ -157,7 +159,7 @@ data class Constructor(
     @SerializedName("name") val name: String
 )
 
-// --- 4. YENİ DATA SINIFLARI (Sonuçlar İçin - Yarış, Sıralama, Sprint) ---
+// --- 4. DATA SINIFLARI (Sonuçlar İçin - Yarış, Sıralama, Sprint) ---
 
 // Ortak bir Sonuç Arayüzü (UI'da kolay göstermek için)
 interface BaseResult {
@@ -244,7 +246,7 @@ class F1Repository(private val api: ErgastApi) {
             }
 
             Race(
-                round = raceData.round, // Round bilgisi maplendi
+                round = raceData.round,
                 raceName = raceData.raceName,
                 circuit = raceData.circuit,
                 date = raceData.date,
@@ -254,6 +256,7 @@ class F1Repository(private val api: ErgastApi) {
                 thirdPractice = raceData.thirdPractice,
                 qualifying = raceData.qualifying,
                 sprint = raceData.sprint,
+                sprintQualifying = raceData.sprintQualifying,
                 raceInstant = raceInstant
             )
         }
@@ -285,5 +288,9 @@ class F1Repository(private val api: ErgastApi) {
         val currentYear = Calendar.getInstance().get(Calendar.YEAR).toString()
         val response = api.getSprintResults(currentYear, round)
         return response.mrData.raceTable.races.firstOrNull()?.results ?: emptyList()
+    }
+    // Sprint Qualifying Sonuç fonksiyonu (Şimdilik boş)
+    suspend fun getSprintQualifyingResults(year: Int, round: String): List<BaseResult> {
+        return emptyList()
     }
 }

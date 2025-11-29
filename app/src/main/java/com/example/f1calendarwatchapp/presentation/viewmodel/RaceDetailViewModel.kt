@@ -9,15 +9,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.Instant
+import java.time.ZonedDateTime
 
-// Detay ekranının durumlarını tanımlarız
 sealed class RaceDetailUiState {
     object Loading : RaceDetailUiState()
     data class Success(val race: Race, val sessions: List<RaceSession>) : RaceDetailUiState()
     data class Error(val message: String) : RaceDetailUiState()
 }
 
-// Race objesi içindeki seansları işleyen ViewModel
 class RaceDetailViewModel(private val race: Race) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RaceDetailUiState>(RaceDetailUiState.Loading)
@@ -36,53 +35,58 @@ class RaceDetailViewModel(private val race: Race) : ViewModel() {
         val sessions = mutableListOf<RaceSession>()
 
         fun addSession(name: String, date: String, time: String?) {
-            if (time != null) {
-                sessions.add(
-                    RaceSession(
-                        id = "${race.raceName.replace(" ", "")}_${name.replace(" ", "")}",
-                        name = name,
-                        date = date,
-                        time = time,
-                        isCompleted = isRaceCompleted(date, time)
-                    )
+            val sessionTime = time ?: "00:00:00Z"
+            sessions.add(
+                RaceSession(
+                    id = name.replace(" ", ""), // ID oluşturma basitleştirildi
+                    name = name,
+                    date = date,
+                    time = sessionTime,
+                    isCompleted = isRaceCompleted(date, sessionTime)
                 )
-            }
+            )
         }
 
-        // Seansları (şimdilik) yarış detaylarının geldiği sırayla ekliyoruz
+        // --- SEANSLARI EKLEME ---
+
+        // 1. Antrenman (Her zaman var)
         race.firstPractice?.let { addSession("1. Antrenman (P1)", it.date, it.time) }
 
-        if (race.sprint != null) {
-            // Sprint Formatı
-            race.qualifying?.let { addSession("Sıralama (Quali)", it.date, it.time) }
-            race.secondPractice?.let { addSession("2. Antrenman (P2)", it.date, it.time) }
-            race.thirdPractice?.let { addSession("3. Antrenman (P3)", it.date, it.time) }
-            race.sprint.let { addSession("Sprint Yarışı", it.date, it.time) }
-        } else {
-            // Normal Format
-            race.secondPractice?.let { addSession("2. Antrenman (P2)", it.date, it.time) }
-            race.thirdPractice?.let { addSession("3. Antrenman (P3)", it.date, it.time) }
-            race.qualifying?.let { addSession("Sıralama (Quali)", it.date, it.time) }
+        // 2. Antrenman
+        race.secondPractice?.let { addSession("2. Antrenman (P2)", it.date, it.time) }
+
+        // 3. Antrenman
+        race.thirdPractice?.let { addSession("3. Antrenman (P3)", it.date, it.time) }
+
+        // *** YENİ KISIM: Sprint Qualifying (Shootout) ***
+        race.sprintQualifying?.let {
+            addSession("Sprint Shootout", it.date, it.time)
         }
+
+        // Sprint Yarışı
+        race.sprint?.let { addSession("Sprint Yarışı", it.date, it.time) }
+
+        // Sıralama Turları (Ana Yarış İçin)
+        race.qualifying?.let { addSession("Sıralama (Quali)", it.date, it.time) }
 
         // Ana Yarış
         addSession("Yarış (Race)", race.date, race.time)
 
-        // KRONOLOJİK SIRALAMA:
+        // --- SIRALAMA ---
+        // Listeyi kronolojik olarak (tarih/saat sırasına göre) yeniden düzenliyoruz.
+        // Böylece Shootout Cuma günü mü, Cumartesi mi doğru yerde durur.
         sessions.sortWith(compareBy { session ->
-            val timeString = session.time ?: "00:00:00Z" // Varsayılan UTC saat
+            val timeString = session.time ?: "00:00:00Z"
             val dateTimeString = "${session.date}T$timeString"
-
             try {
-                // ISO 8601 formatı ile anlık zamanı alıyoruz
-                Instant.parse(dateTimeString)
+                // ZonedDateTime kullanmak Instant.parse'dan daha güvenlidir
+                ZonedDateTime.parse(dateTimeString).toInstant()
             } catch (e: Exception) {
-                // Hata durumunda log'a yazıp en sona atıyoruz.
-                e.printStackTrace() // ARTIK 'e' parametresi KULLANILDI.
+                // Hata durumunda en sona at
                 Instant.MAX
             }
         })
 
-        _uiState.value = RaceDetailUiState.Success(race, sessions.toList())
+        _uiState.value = RaceDetailUiState.Success(race, sessions)
     }
 }
