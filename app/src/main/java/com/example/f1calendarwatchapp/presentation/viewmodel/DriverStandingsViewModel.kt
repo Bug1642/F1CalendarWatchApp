@@ -10,11 +10,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Calendar
+
 
 // UI Durumları
 sealed class DriverStandingsUiState {
     object Loading : DriverStandingsUiState()
+    object Empty : DriverStandingsUiState() // YENİ: Boş veri durumu (Sezon başlamadı)
     data class Success(val standings: List<DriverStanding>) : DriverStandingsUiState()
     data class Error(val message: String) : DriverStandingsUiState()
 }
@@ -35,10 +36,8 @@ class DriverStandingsViewModel(private val repository: F1Repository) : ViewModel
                 val standings = repository.getDriverStandings()
 
                 if (standings.isEmpty()) {
-                    // EĞER LİSTE BOŞSA: Sezon başlamamış demektir.
-                    // Yılı dinamik alıp mesajı ona göre verelim.
-                    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-                    _uiState.value = DriverStandingsUiState.Error("$currentYear Sezonu Henüz Başlamadı veya Puan Durumu Hazır Değil.")
+
+                    _uiState.value = DriverStandingsUiState.Empty
                 } else {
                     _uiState.value = DriverStandingsUiState.Success(standings)
                 }
@@ -48,7 +47,7 @@ class DriverStandingsViewModel(private val repository: F1Repository) : ViewModel
         }
     }
 
-    // Factory Sınıfı (MainActivity'de inject etmek için)
+    // Factory Sınıfı
     class Factory(private val repository: F1Repository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

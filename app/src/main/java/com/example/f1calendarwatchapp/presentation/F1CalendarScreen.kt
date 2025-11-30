@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
@@ -44,7 +45,6 @@ fun F1CalendarScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val nextRace by viewModel.nextRace.collectAsState()
-    // LocalContext burada bildirim planlaması için kullanılıyor olabilir, koruyoruz.
     val context = LocalContext.current
 
     Scaffold(
@@ -62,54 +62,65 @@ fun F1CalendarScreen(
                 ) {
 
                     if (nextRace != null) {
+                        // --- SEZON DEVAM EDİYORSA ---
+
+                        // Başlık Yazısı
                         item {
-                            // Geri sayım sayacı
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "${getCurrentYear()} Formula 1 Takvimi",
+                                    style = MaterialTheme.typography.title3,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                                )
+                            }
+                        }
+
+                        // Geri sayım sayacı
+                        item {
                             CountdownTimer(
                                 race = nextRace!!,
                                 onClick = onRaceClick
                             )
                         }
+
+                        // Puan Durumu Butonu
+                        item {
+                            Chip(
+                                onClick = onStandingsClick,
+                                label = {
+                                    Text(
+                                        text = "Puan Durumu",
+                                        style = MaterialTheme.typography.button,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Filled.EmojiEvents,
+                                        contentDescription = "Puan Durumu",
+                                        tint = Color(0xFFFFD700)
+                                    )
+                                },
+                                colors = ChipDefaults.secondaryChipColors(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+
+
                     } else {
-                        // Sezon bittiyse mesajı göster
+                        // --- SEZON BİTTİYSE ---
                         item {
                             EndSeasonMessage()
                         }
                     }
 
-                    // Puan Durumu Butonu
-                    item {
-                        Chip(
-                            onClick = onStandingsClick,
-                            label = {
-                                Text(
-                                    text = "Puan Durumu",
-                                    style = MaterialTheme.typography.button,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Filled.EmojiEvents,
-                                    contentDescription = "Puan Durumu",
-                                    tint = Color(0xFFFFD700) // Altın sarısı
-                                )
-                            },
-                            colors = ChipDefaults.secondaryChipColors(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-
-                    item {
-                        Text(
-                            text = "${getCurrentYear()} Formula 1 Takvimi",
-                            style = MaterialTheme.typography.title3,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
-                        )
-                    }
-
+                    // Yarış Listesi
                     items(state.races) { race ->
                         RaceItem(race = race, onClick = onRaceClick)
                     }
@@ -148,7 +159,7 @@ fun CountdownTimer(race: Race, onClick: (Race) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp, horizontal = 8.dp)
-            .clickable(onClick = { onClick(race) }) // Tıklanabilir
+            .clickable(onClick = { onClick(race) })
             .background(
                 color = MaterialTheme.colors.surface.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(8.dp)
@@ -183,6 +194,8 @@ fun CountdownTimer(race: Race, onClick: (Race) -> Unit) {
 
 @Composable
 fun EndSeasonMessage() {
+    val nextYear = getCurrentYear() + 1
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -200,13 +213,15 @@ fun EndSeasonMessage() {
             text = "🏁 SEZON BİTTİ 🏁",
             style = MaterialTheme.typography.title3,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFC8F0FF)
+            color = Color(0xFFC8F0FF),
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Yeni sezon takvimi bekleniyor.",
+            text = "$nextYear sezon takvimi bekleniyor.",
             style = MaterialTheme.typography.caption1,
-            color = Color.Gray
+            color = Color.Gray,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -217,10 +232,9 @@ fun RaceItem(race: Race, onClick: (Race) -> Unit) {
     val backgroundColor = if (isCompleted) CompletedRaceBackground else UpcomingRaceBackground
     val contentColor = if (isCompleted) CompletedRaceContent else UpcomingRaceContent
 
-    // DÜZELTME: Artık tüm yarışlar tıklanabilir (Sonuçları görmek için)
     Card(
-        onClick = { onClick(race) }, // Koşulsuz tıklama
-        enabled = true,             // Her zaman aktif
+        onClick = { onClick(race) },
+        enabled = true,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp),

@@ -74,7 +74,7 @@ fun formatRaceDateTime(raceDate: String, raceTime: String?): String {
     }
 }
 
-// Yıl bilgisini döndürür (Takvim başlığı için)
+// Yıl bilgisini döndürür
 fun getCurrentYear(): Int {
     return Calendar.getInstance().get(Calendar.YEAR)
 }
